@@ -1,0 +1,12 @@
+# Basically a copy of .gitignore
+# But also ignores git secret
+__pypackages__
+__pycache__
+*.secret
+.gitsecret
+.pdm.toml
+.vscode
+*.pyc
+api_secrets.toml
+docker-compose.yml
+Dockerfile

@@ -1,7 +1,8 @@
+__pypackages__
+__pycache__
+!*.secret
+.gitsecret/keys/random_seed
 .pdm.toml
 .vscode
-__pypackages__
-.gitsecret/keys/random_seed
-!*.secret
-api_secrets.toml
 *.pyc
+api_secrets.toml

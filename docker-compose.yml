@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  lynos:
+    build: .
+    # This is needed to enable Sonos discovery
+    network_mode: host
+    # Not using Docker secrets as I like TOML, not seperate files.
+    volumes:
+      - ./api_secrets.toml:/lynos/api_secrets.toml:ro

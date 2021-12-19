@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 import functools
+import os
 from typing import Optional, Union
 
 import requests
@@ -54,7 +55,10 @@ class TrackInfo:
         cleaned_title = raw.title.split("(")[0].strip()
 
         # Grab lyrics
-        token = toml.load("api_secrets.toml")["genius"]["client_access_token"]
+        token = os.getenv(
+            "GENIUS_ACCESS_TOKEN",
+            toml.load("api_secrets.toml")["genius"]["client_access_token"],
+        )
         genius = Genius(token)
         song = genius.search_song(cleaned_title, raw.artist)
         lyrics = song.lyrics
