@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import dataclasses as dc
 import functools
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 import soco
@@ -9,58 +11,95 @@ from lyricsgenius import Genius
 from PIL import Image
 
 
+class NoSuchZoneError(Exception):
+    def __init__(self, zone: str):
+        self.zone = zone
+
+
+class NoSongBeingPlayedError(Exception):
+    def __init__(self, zone: str):
+        self.zone = zone
+
+
 @dc.dataclass
-class TrackInfo:
+class RawTrackInfo:
+    """A dataclass that represents the raw data from the SoCo API."""
+
     title: str
     artist: str
     album: str
+    album_art: str
+    position: str
+    playlist_position: str
+    duration: str
+    uri: str
+    metadata: str
+
+
+@dc.dataclass
+class TrackInfo:
+    """Processed version of RawTrackInfo."""
+
+    title: str
+    cleaned_title: str
+    artist: str
+    album: str
     album_art: Image
-    position: str  # This is actually timedelta with format of xx:yy:zz
     # Other info are thrown away
+    lyrics: str
 
-    @functools.cached_property
-    def cleaned_title(self) -> str:
-        """Make sure there's no something like (Remastered 2009) in the title"""
-        return self.title.split("(")[0].strip()
+    @staticmethod
+    def from_raw(raw: RawTrackInfo) -> TrackInfo:
+        # Clean title
+        cleaned_title = raw.title.split("(")[0].strip()
 
-    @functools.cached_property
-    def lyrics(self) -> str:
+        # Grab lyrics
         token = toml.load("api_secrets.toml")["genius"]["client_access_token"]
         genius = Genius(token)
-        song = genius.search_song(self.cleaned_title, self.artist)
-        return song.lyrics
+        song = genius.search_song(cleaned_title, raw.artist)
+        lyrics = song.lyrics
+
+        # Grab album art
+        album_art = Image.open(requests.get(raw.album_art, stream=True).raw)
+
+        return TrackInfo(
+            title=raw.title,
+            cleaned_title=cleaned_title,
+            artist=raw.artist,
+            album=raw.album,
+            album_art=album_art,
+            lyrics=lyrics,
+        )
 
 
 def pick_speaker_with_name(name: str):
     for speaker in soco.discover():
         if speaker.player_name == name:
             return speaker
-    raise RuntimeError(f"Cannot find speaker (zone) with name {name}")
+    raise NoSuchZoneError(name)
 
 
 @functools.singledispatch
-def get_track_info(speaker):
+def get_raw_track_info(speaker):
     raise NotImplementedError(f"Type {type(speaker)} is not supported")
 
 
-@get_track_info.register
+@get_raw_track_info.register
 def _(speaker: soco.SoCo) -> Optional[TrackInfo]:
     result = speaker.get_current_track_info()
-    if result and result["title"]:
-        return TrackInfo(
-            title=result["title"],
-            artist=result["artist"],
-            album=result["album"],
-            album_art=Image.open(requests.get(result["album_art"], stream=True).raw),
-            position=result["position"],
-        )
-    return None
+    if not result or not result.get("title"):
+        raise NoSongBeingPlayedError(speaker.player_name)
+    return RawTrackInfo(**result)
 
 
-@get_track_info.register
+@get_raw_track_info.register
 def _(speaker: str) -> Optional[TrackInfo]:
     speaker = pick_speaker_with_name(speaker)
-    return get_track_info(speaker)
+    return get_raw_track_info(speaker)
+
+
+def get_track_info(speaker: Union[soco.SoCo, str]) -> Optional[TrackInfo]:
+    return TrackInfo.from_raw(get_raw_track_info(speaker))
 
 
 if __name__ == "__main__":
