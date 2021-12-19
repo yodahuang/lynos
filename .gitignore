@@ -1,3 +1,7 @@
 .pdm.toml
 .vscode
 __pypackages__
+.gitsecret/keys/random_seed
+!*.secret
+api_secrets.toml
+*.pyc
