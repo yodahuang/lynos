@@ -102,6 +102,7 @@ def get_track_info(speaker: Union[soco.SoCo, str]) -> Optional[TrackInfo]:
     return TrackInfo.from_raw(get_raw_track_info(speaker))
 
 
+# Just for debugging purposes.
 if __name__ == "__main__":
     speaker = pick_speaker_with_name("Book Room")
     track_info = get_track_info(speaker)
