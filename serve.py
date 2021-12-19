@@ -61,7 +61,7 @@ async def no_song_being_played_exception_handler(
 @app.exception_handler(NoSuchZoneError)
 async def no_such_zone_exception_handler(request: Request, exc: NoSuchZoneError):
     return JSONResponse(
-        status_code=418,
+        status_code=404,
         content={"message": f"No player named {exc.zone}."},
     )
 
