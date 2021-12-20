@@ -59,7 +59,7 @@ class TrackInfo:
             "GENIUS_ACCESS_TOKEN",
             toml.load("api_secrets.toml")["genius"]["client_access_token"],
         )
-        genius = Genius(token)
+        genius = Genius(token, retries=3)
         song = genius.search_song(cleaned_title, raw.artist)
         lyrics = song.lyrics
 
